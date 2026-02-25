@@ -283,5 +283,24 @@
     "TotalActiveTime": "00:00:01.3207467",
     "LastResumedAt": "2026-02-24T20:39:30.5359249-08:00",
     "Duration": "00:00:01.3207467"
+  },
+  {
+    "Id": 26,
+    "Task": {
+      "Id": 0,
+      "Name": "New Task Demo",
+      "Description": "",
+      "CategoryId": 1,
+      "Category": {
+        "Id": 1,
+        "Name": "Work"
+      }
+    },
+    "StartTime": "2026-02-24T22:54:22.3725145-08:00",
+    "EndTime": "2026-02-24T22:54:26.4252383-08:00",
+    "State": 2,
+    "TotalActiveTime": "00:00:04.0527066",
+    "LastResumedAt": "2026-02-24T22:54:22.3725242-08:00",
+    "Duration": "00:00:04.0527066"
   }
 ]

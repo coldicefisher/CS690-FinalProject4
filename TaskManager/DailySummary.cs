@@ -79,6 +79,23 @@ public class DailySummary {
         }
 
         AnsiConsole.Write(table);
+
+        // Bar Chart ////////////////////
+        var chart = new BarChart()
+            .Width(60)
+            .Label("[bold yellow]Time Spent Per Task (Minutes)[/]")
+            .CenterLabel();
+
+        foreach (var item in totals)
+        {
+            chart.AddItem(
+                item.TaskName,
+                (double)item.Total.TotalMinutes,
+                Color.Cyan
+            );
+        }
+
+        AnsiConsole.Write(chart);
     }
 
 }
