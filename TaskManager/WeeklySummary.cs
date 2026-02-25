@@ -2,28 +2,24 @@ namespace TaskManager;
 
 using Spectre.Console;
 
-public class WeeklySummary
-{
+public class WeeklySummary {
     
 
     private readonly TaskService _service;
 
-    public WeeklySummary(TaskService service)
-    {
+    public WeeklySummary(TaskService service) {
         _service = service;
     }
 
-    public bool HasData()
-    {
+
+
+    public bool HasData() {
         return _service.GetWeeklyGroups().Any();
     }
 
-    public void DisplaySelection(TaskService service)
-    {
-        while (true)
-        {
-            if (!HasData())
-            {
+    public void DisplaySelection(TaskService service) {
+        while (true) {
+            if (!HasData()) {
                 AnsiConsole.MarkupLine("[yellow]No weekly data available.[/]");
                 return;
             }
@@ -34,19 +30,16 @@ public class WeeklySummary
 
             prompt.AddChoice("Cancel");
 
-            foreach (var group in _service.GetWeeklyGroups())
-            {
+            foreach (var group in _service.GetWeeklyGroups()) {
                 var label = $"{group.Key.Start:yyyy-MM-dd} to {group.Key.End:yyyy-MM-dd}";
                 prompt.AddChoice(label);
             }
 
             var selected = AnsiConsole.Prompt(prompt);
 
-            if (selected == "Cancel")
-                return;
+            if (selected == "Cancel") return;
 
-            var selectedIndex = _service.GetWeeklyGroups().FindIndex(g =>
-                $"{g.Key.Start:yyyy-MM-dd} to {g.Key.End:yyyy-MM-dd}" == selected);
+            var selectedIndex = _service.GetWeeklyGroups().FindIndex(g => $"{g.Key.Start:yyyy-MM-dd} to {g.Key.End:yyyy-MM-dd}" == selected);
 
             var selectedWindow = _service.GetWeeklyGroups()
                 .Skip(selectedIndex)
@@ -60,56 +53,139 @@ public class WeeklySummary
                     .Title("\nSelect option:")
                     .AddChoices("Delete Entry", "Return"));
 
-            if (action == "Return")
-                return;
+            if (action == "Return") return;
 
             HandleDeleteFlow(service);
         }
     }
 
-    private void DisplayWindow(List<IGrouping<WeekWindow, TaskLog>> window)
-    {
-        var oldestWeek = window.Last().Key.Start;
-        var newestWeek = window.First().Key.End;
-
+    private void DisplayWindow(List<IGrouping<WeekWindow, TaskLog>> window) {
         AnsiConsole.Clear();
 
-        AnsiConsole.Write(new Rule(
-            $"[bold yellow]TOTAL AGGREGATES ({oldestWeek:yyyy-MM-dd} to {newestWeek:yyyy-MM-dd})[/]"));
-
-        DisplayAggregateSection(window.SelectMany(g => g));
-
-        AnsiConsole.WriteLine();
-
+        // Weekly Breakdown //////////////////////////////////////////////////////////////////////////////////////////////////////
         AnsiConsole.Write(new Rule("[bold cyan]WEEKLY BREAKDOWN[/]"));
 
-        foreach (var week in window)
-        {
+        foreach (var week in window) {
             AnsiConsole.WriteLine();
             AnsiConsole.MarkupLine(
                 $"[bold]Week {week.Key.Start:yyyy-MM-dd} to {week.Key.End:yyyy-MM-dd}[/]");
 
             DisplayAggregateSection(week);
         }
+
+        // Averages Section //////////////////////////////////////////////////////////////////////////////////////////////////////
+        var allLogs = window.SelectMany(g => g).ToList();
+
+        var distinctDays = allLogs
+            .Select(l => l.StartTime.Date)
+            .Distinct()
+            .Count();
+
+        if (distinctDays == 0) distinctDays = 1;
+
+        
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(new Rule("[bold green]Average Per Day (Task)[/]"));
+
+        var taskAverageTable = new Table();
+        taskAverageTable.AddColumn("Task");
+        taskAverageTable.AddColumn("Avg / Day");
+
+        var taskGroups = allLogs
+            .GroupBy(l => l.Task.Name)
+            .Select(g => new {
+                Task = g.Key,
+                Total = TimeSpan.FromTicks(g.Sum(l => l.Duration.Ticks))
+            })
+            .OrderByDescending(x => x.Total)
+            .ToList();
+
+        foreach (var task in taskGroups) {
+            var avg = TimeSpan.FromTicks(task.Total.Ticks / distinctDays);
+            taskAverageTable.AddRow(task.Task, avg.ToString(@"hh\:mm"));
+        }
+
+        AnsiConsole.Write(taskAverageTable);
+
+        // Task Chart /////////////////////////////////////////////////////////////////
+
+        var taskChart = new BarChart()
+            .Width(60)
+            .Label("[bold]Avg Minutes Per Day (Task)[/]");
+
+        foreach (var task in taskGroups) {
+            var avgMinutes = task.Total.TotalMinutes / distinctDays;
+            taskChart.AddItem(task.Task, avgMinutes, Color.Blue);
+        }
+
+        AnsiConsole.Write(taskChart);
+
+
+        // Category Averages /////////////////////////////////////////////////////////////////
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(new Rule("[bold green]Average Per Day (Category)[/]"));
+
+        var categoryAverageTable = new Table();
+        categoryAverageTable.AddColumn("Category");
+        categoryAverageTable.AddColumn("Avg / Day");
+
+        var categoryGroups = allLogs
+        .GroupBy(l => l.Task.Category?.Name ?? "Uncategorized")
+        .Select(g => new {
+            Category = g.Key,
+            Total = TimeSpan.FromTicks(g.Sum(l => l.Duration.Ticks))
+        })
+        .OrderByDescending(x => x.Total)
+        .ToList();
+
+        foreach (var cat in categoryGroups) {
+            var avg = TimeSpan.FromTicks(cat.Total.Ticks / distinctDays);
+            categoryAverageTable.AddRow(cat.Category, avg.ToString(@"hh\:mm"));
+        }
+
+        AnsiConsole.Write(categoryAverageTable);
+
+        // Category Chart /////////////////////////////////////////////////////////////////
+
+        var categoryChart = new BarChart()
+            .Width(60)
+            .Label("[bold]Avg Minutes Per Day (Category)[/]");
+
+        foreach (var cat in categoryGroups) {
+            var avgMinutes = cat.Total.TotalMinutes / distinctDays;
+            categoryChart.AddItem(cat.Category, avgMinutes, Color.Green);
+        }
+
+        AnsiConsole.Write(categoryChart);
+
+
+        // Total Aggregates /////////////////////////////////////////////////////////////////////////////////////////////
+        var oldestWeek = window.Last().Key.Start;
+        var newestWeek = window.First().Key.End;
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(new Rule(
+            $"[bold yellow]TOTAL AGGREGATES ({oldestWeek:yyyy-MM-dd} to {newestWeek:yyyy-MM-dd})[/]"));
+
+        DisplayAggregateSection(allLogs);
     }
 
-    private void DisplayAggregateSection(IEnumerable<TaskLog> logs)
-    {
+
+
+    private void DisplayAggregateSection(IEnumerable<TaskLog> logs, bool showAverages = false) {
         var categoryTable = new Table();
         categoryTable.AddColumn("Category");
         categoryTable.AddColumn("Time Spent");
 
         var categoryGroups = logs
             .GroupBy(t => t.Task.Category?.Name ?? "Uncategorized")
-            .Select(g => new
-            {
+            .Select(g => new {
                 Category = g.Key,
                 Total = TimeSpan.FromTicks(g.Sum(t => t.Duration.Ticks))
             })
             .OrderByDescending(x => x.Total);
 
-        foreach (var cat in categoryGroups)
-            categoryTable.AddRow(cat.Category, cat.Total.ToString(@"hh\:mm\:ss"));
+        foreach (var cat in categoryGroups) categoryTable.AddRow(cat.Category, cat.Total.ToString(@"hh\:mm\:ss"));
 
         AnsiConsole.Write(categoryTable);
         AnsiConsole.WriteLine();
@@ -120,28 +196,24 @@ public class WeeklySummary
 
         var taskGroups = logs
             .GroupBy(t => t.Task.Name)
-            .Select(g => new
-            {
+            .Select(g => new {
                 Task = g.Key,
                 Total = TimeSpan.FromTicks(g.Sum(t => t.Duration.Ticks))
             })
             .OrderByDescending(x => x.Total);
 
-        foreach (var task in taskGroups)
-            taskTable.AddRow(task.Task, task.Total.ToString(@"hh\:mm\:ss"));
+        foreach (var task in taskGroups) taskTable.AddRow(task.Task, task.Total.ToString(@"hh\:mm\:ss"));
 
         AnsiConsole.Write(taskTable);
     }
 
-    private void HandleDeleteFlow(TaskService service)
-    {
+    private void HandleDeleteFlow(TaskService service) {
         var allLogs = _service.GetWeeklyGroups()
             .SelectMany(g => g)
             .OrderByDescending(l => l.StartTime)
             .ToList();
 
-        if (!allLogs.Any())
-        {
+        if (!allLogs.Any()) {
             AnsiConsole.MarkupLine("[yellow]No entries to delete.[/]");
             return;
         }
@@ -158,13 +230,11 @@ public class WeeklySummary
 
         dayPrompt.AddChoice("Cancel");
 
-        foreach (var day in days)
-            dayPrompt.AddChoice(day.ToString("yyyy-MM-dd"));
+        foreach (var day in days) dayPrompt.AddChoice(day.ToString("yyyy-MM-dd"));
 
         var selectedDay = AnsiConsole.Prompt(dayPrompt);
 
-        if (selectedDay == "Cancel")
-            return;
+        if (selectedDay == "Cancel") return;
 
         var parsedDay = DateTime.Parse(selectedDay);
 
@@ -179,8 +249,7 @@ public class WeeklySummary
 
         entryPrompt.AddChoice("Cancel");
 
-        foreach (var log in logsForDay)
-        {
+        foreach (var log in logsForDay) {
             var label =
                 $"{log.Id} | {log.StartTime:HH:mm} | {log.Task.Name} | {log.Duration:hh\\:mm\\:ss}";
 
@@ -189,18 +258,16 @@ public class WeeklySummary
 
         var selectedEntry = AnsiConsole.Prompt(entryPrompt);
 
-        if (selectedEntry == "Cancel")
-            return;
+        if (selectedEntry == "Cancel") return;
 
         var id = int.Parse(selectedEntry.Split('|')[0].Trim());
 
-        // 🔴 Confirm Delete
+        // Confirm Delete
         var confirm = AnsiConsole.Confirm(
             "[red]Are you sure you want to delete this entry?[/]",
             defaultValue: false);
 
-        if (!confirm)
-        {
+        if (!confirm) {
             AnsiConsole.MarkupLine("[yellow]Deletion cancelled.[/]");
             return;
         }
@@ -209,4 +276,6 @@ public class WeeklySummary
 
         AnsiConsole.MarkupLine("[red]Entry deleted successfully.[/]");
     }
+
+    
 }

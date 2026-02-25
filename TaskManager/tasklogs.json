@@ -247,63 +247,6 @@
     "Duration": "00:00:07.6853423"
   },
   {
-    "Id": 18,
-    "Task": {
-      "Id": 0,
-      "Name": "Doing hw",
-      "Description": "",
-      "CategoryId": 4,
-      "Category": {
-        "Id": 4,
-        "Name": "College"
-      }
-    },
-    "StartTime": "2026-02-24T14:59:55.7131853-08:00",
-    "EndTime": "2026-02-24T14:59:58.1034046-08:00",
-    "State": 2,
-    "TotalActiveTime": "00:00:02.3902029",
-    "LastResumedAt": "2026-02-24T14:59:55.7131926-08:00",
-    "Duration": "00:00:02.3902029"
-  },
-  {
-    "Id": 19,
-    "Task": {
-      "Id": 0,
-      "Name": "more refacotring",
-      "Description": "",
-      "CategoryId": 4,
-      "Category": {
-        "Id": 4,
-        "Name": "College"
-      }
-    },
-    "StartTime": "2026-02-24T15:02:19.7088774-08:00",
-    "EndTime": "2026-02-24T15:02:26.2044748-08:00",
-    "State": 2,
-    "TotalActiveTime": "00:00:04.1762129",
-    "LastResumedAt": "2026-02-24T15:02:24.3989879-08:00",
-    "Duration": "00:00:04.1762129"
-  },
-  {
-    "Id": 21,
-    "Task": {
-      "Id": 0,
-      "Name": "New Task works",
-      "Description": "",
-      "CategoryId": 2,
-      "Category": {
-        "Id": 2,
-        "Name": "Personal"
-      }
-    },
-    "StartTime": "2026-02-24T19:01:15.1255331-08:00",
-    "EndTime": "2026-02-24T19:01:17.0608556-08:00",
-    "State": 2,
-    "TotalActiveTime": "00:00:01.9353073",
-    "LastResumedAt": "2026-02-24T19:01:15.1255401-08:00",
-    "Duration": "00:00:01.9353073"
-  },
-  {
     "Id": 22,
     "Task": {
       "Id": 0,
