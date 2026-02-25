@@ -194,6 +194,17 @@ public class WeeklySummary
 
         var id = int.Parse(selectedEntry.Split('|')[0].Trim());
 
+        // 🔴 Confirm Delete
+        var confirm = AnsiConsole.Confirm(
+            "[red]Are you sure you want to delete this entry?[/]",
+            defaultValue: false);
+
+        if (!confirm)
+        {
+            AnsiConsole.MarkupLine("[yellow]Deletion cancelled.[/]");
+            return;
+        }
+
         service.DeleteTaskLog(id);
 
         AnsiConsole.MarkupLine("[red]Entry deleted successfully.[/]");
